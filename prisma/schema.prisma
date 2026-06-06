@@ -1,0 +1,229 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String            @id @default(cuid())
+  email         String            @unique
+  name          String  
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  videos        Video[]
+  comments      Comment[]
+  workspaces    WorkspaceMember[]
+  emailVerified Boolean           @default(false)
+  image         String?
+  sessions      Session[]
+  accounts      Account[]
+
+}
+
+model Video {
+  id           String     @id @default(cuid())
+  title        String
+  description  String?
+  videoUrl     String?
+  thumbnailUrl String?
+  duration     Int?
+  visibility   Visibility @default(PRIVATE)
+  viewCount    Int        @default(0)
+  fileSize     Int?
+
+  shareId String @unique @default(cuid())
+
+  processingStatus ProcessingStatus @default(UPLOADED)
+
+  userId      String
+  workspaceId String?
+  mimeType    String?
+  recordingType    RecordingType?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  processingStartedAt DateTime?
+  processingEndedAt   DateTime?
+  errorMessage        String?
+
+  owner User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull) // if deleted video should not be
+
+  comments    Comment[]
+  transcript  Transcript?
+  summary     Summary?
+  actionItems ActionItem[]
+
+  @@index([userId])
+  @@index([workspaceId])
+  @@index([processingStatus])
+}
+
+model Workspace {
+  id   String @id @default(cuid())
+  name String
+  slug String @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members WorkspaceMember[]
+  videos  Video[]
+}
+
+model WorkspaceMember {
+  id String @id @default(cuid())
+
+  userId      String
+  workspaceId String
+
+  role WorkspaceRole
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+}
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum Visibility {
+  PRIVATE
+  PUBLIC
+}
+
+enum ProcessingStatus {
+  UPLOADED
+  PROCESSING
+  TRANSCRIBED
+  COMPLETED
+  FAILED
+}
+
+enum RecordingType {
+  SCREEN
+  CAMERA
+  SCREEN_AND_CAMERA
+}
+
+model Comment {
+  id String @id @default(cuid())
+
+  content String
+
+  timestamp Int?
+
+  userId  String
+  videoId String
+
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@index([videoId])
+  @@index([userId])
+}
+
+model Transcript {
+  id String @id @default(cuid())
+
+  content String @db.Text
+
+  videoId String @unique
+
+  createdAt DateTime @default(now())
+
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@index([videoId])
+}
+
+model Summary {
+  id String @id @default(cuid())
+
+  content String @db.Text
+
+  videoId String @unique
+
+  createdAt DateTime @default(now())
+
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@index([videoId])
+}
+
+model ActionItem {
+  id String @id @default(cuid())
+
+  task String
+
+  completed Boolean @default(false)
+
+  videoId String
+
+  createdAt DateTime @default(now())
+
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@index([videoId])
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+}
