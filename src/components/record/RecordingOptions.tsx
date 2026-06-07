@@ -2,7 +2,7 @@
 
 import type { RecordMode } from "@/components/record/types";
 
-const options: { value: RecordMode; label: string }[] = [
+const options: { value: RecordMode; label: string }[] = [ // array of multiple recording options.
   { value: "screen-camera", label: "Screen + Camera" },
   { value: "screen-only", label: "Screen Only" },
   { value: "camera-only", label: "Camera Only" },
@@ -17,7 +17,7 @@ type RecordingOptionsProps = {
 export default function RecordingOptions({
   recordMode,
   setRecordMode,
-  disabled = false,
+  disabled = false, // by default false means recording is allowed to be done.
 }: RecordingOptionsProps) {
   return (
     <div className="space-y-3">

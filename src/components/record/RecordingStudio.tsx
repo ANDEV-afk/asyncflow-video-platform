@@ -43,8 +43,8 @@ async function buildCompositeStream(
 ) {
   const screenVideo = document.createElement("video");
   screenVideo.srcObject = new MediaStream([screenTrack]); // attaching particular stream to that video element
-  screenVideo.muted = true;
-  await screenVideo.play(); //for playing
+  screenVideo.muted = true; // by default on screen share mic is muted, change it. 
+  await screenVideo.play(); //play the screen video interface on UI.
 
   const cameraVideo = document.createElement("video");
   cameraVideo.srcObject = new MediaStream([cameraTrack]);
@@ -54,12 +54,12 @@ async function buildCompositeStream(
   const settings = screenTrack.getSettings(); // settings for the track.
   const canvas = document.createElement("canvas"); // blank canvas in the dom model.
   canvas.width = settings.width ?? 1280; // screen share media track ki settings hai.
-  canvas.height = settings.height ?? 720;
+  canvas.height = settings.height ?? 720; // canvas mein settings set kar rhe screenTrack ki for composite video.
 
   const ctx = canvas.getContext("2d"); // screen size size context 2d here.
   if (!ctx) throw new Error("Canvas is not supported."); // so if canvas not supported screen share would not work.
 
-  const pipWidth = Math.floor(canvas.width * 0.25); // pip-> picture in picture 
+  const pipWidth = Math.floor(canvas.width * 0.25); // pip-> picture in picture
   const pipHeight = Math.floor((pipWidth * 9) / 16);
 
   let frameId = 0;
@@ -72,19 +72,19 @@ async function buildCompositeStream(
       pipWidth,
       pipHeight
     );
-    frameId = requestAnimationFrame(draw);
+    frameId = requestAnimationFrame(draw); // for drawing frame on canvas but as video moves draw() should be called to capture other moves.
   };
 
   draw(); // so now every frame is captured like this.
 
   const stream = canvas.captureStream(30); // video stream
   const stop = () => {
-    cancelAnimationFrame(frameId);
-    screenVideo.srcObject = null;
+    cancelAnimationFrame(frameId); // animation loop break for preventing memory leak.
+    screenVideo.srcObject = null; // after canvas work done.
     cameraVideo.srcObject = null;
   };
 
-  return { stream, stop }; // when recording stopped
+  return { stream, stop }; // when recording stopped, returning stream and stop function.
 }
 
 export default function RecordingStudio({
@@ -95,7 +95,7 @@ export default function RecordingStudio({
   const micSelect = useMediaDeviceSelect({ kind: "audioinput", room });
   const cameraSelect = useMediaDeviceSelect({ kind: "videoinput", room });
 
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null); // initially woh mediaRecorder box exmpty. 
   const chunksRef = useRef<Blob[]>([]);
   const compositeStopRef = useRef<(() => void) | null>(null);
 
@@ -140,7 +140,7 @@ export default function RecordingStudio({
 
     setIsPreparing(true);
     setError(null);
-    chunksRef.current = []; // old video remove
+    chunksRef.current = []; // old video remove, no chunks here of any video as new video coming.
 
     try {
       if (recordMode !== "camera-only") {
@@ -149,10 +149,10 @@ export default function RecordingStudio({
 
       const audioTrack = await waitForTrack(
         localParticipant,
-        Track.Source.Microphone // polling for mic track
+        Track.Source.Microphone // polling for mic track enabled.
       );
 
-      let recordingStream: MediaStream;
+      let recordingStream: MediaStream; // recording stream of MediaStream interface of JS.
 
       if (recordMode === "camera-only") {
         const cameraTrack = await waitForTrack( // check tracks came from LiveKit or not.
@@ -176,7 +176,7 @@ export default function RecordingStudio({
           Track.Source.Camera
         );
         const composite = await buildCompositeStream(screenTrack, cameraTrack);
-        compositeStopRef.current = composite.stop;
+        compositeStopRef.current = composite.stop; // this function is saved in the ref object, for latter use of stop().
         recordingStream = new MediaStream([
           ...composite.stream.getVideoTracks(), // composite track se video track combined(screen+camera) capture
           audioTrack,
@@ -188,6 +188,9 @@ export default function RecordingStudio({
         : "video/webm";
 
       const recorder = new MediaRecorder(recordingStream, { mimeType }); // a MediaRecorder that watches that stream and saves it.
+      // Stream leta hai
+      // Encode karta hai
+      // Chunks generate karta hai
 
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) chunksRef.current.push(event.data);
@@ -198,7 +201,7 @@ export default function RecordingStudio({
       // if (event.data.size > 0) — ignore empty chunks
 
       recorder.onstop = () => {
-        compositeStopRef.current?.(); //Stops the canvas animation (Screen + Camera mode only)
+        compositeStopRef.current?.(); //Stops the canvas animation (Screen + Camera mode only), calling stop().
         compositeStopRef.current = null;//Clears that cleanup function
         const blob = new Blob(chunksRef.current, { type: mimeType });//Combines all chunks into one video file in memory
         onRecordingComplete(blob, recordMode);//Sends the finished video to the parent (LiveKitRecorder) for preview/upload
@@ -211,9 +214,9 @@ export default function RecordingStudio({
       recorder.start(1000);//Starts recording; 1000 = emit a chunk every 1 second (ms)
       setIsRecording(true);//UI shows “Recording” badge
     } catch (recordingError) {
-      compositeStopRef.current?.();
-      compositeStopRef.current = null;
-      await localParticipant.setScreenShareEnabled(false);
+      compositeStopRef.current?.(); // STOP() FUNCTION CALLED.
+      compositeStopRef.current = null; // ref object null, no canvas video for now.
+      await localParticipant.setScreenShareEnabled(false); // set state.
       setIsRecording(false);
       setIsPreparing(false);
       setError(
@@ -234,7 +237,7 @@ export default function RecordingStudio({
 
   const handleStopRecording = useCallback(() => {
     if (mediaRecorderRef.current?.state === "recording") {
-      mediaRecorderRef.current.stop(); // if recording is done at this point then stop mediaRecorder.
+      mediaRecorderRef.current.stop(); // if recording is done at this point then stop mediaRecorder by calling stop().
     }
     localParticipant.setScreenShareEnabled(false).catch(() => undefined);
   }, [localParticipant]);

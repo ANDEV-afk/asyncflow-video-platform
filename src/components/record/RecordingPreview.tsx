@@ -8,7 +8,7 @@ import type { RecordMode } from "@/components/record/types";
 
 type RecordingPreviewProps = {
   isRecording: boolean;
-  recordMode: RecordMode;
+  recordMode: RecordMode;  
 };
 
 export default function RecordingPreview({
@@ -20,7 +20,7 @@ export default function RecordingPreview({
     { source: Track.Source.ScreenShare, withPlaceholder: true },
   ]);
 
-  const cameraTrack = isTrackReference(cameraTracks[0]) ? cameraTracks[0] : null;
+  const cameraTrack = isTrackReference(cameraTracks[0]) ? cameraTracks[0] : null; // for checking actual camera track or only placeholder.
   const screenTrack = isTrackReference(screenTracks[0]) ? screenTracks[0] : null;
 
   const showCamera =
@@ -34,7 +34,7 @@ export default function RecordingPreview({
         <div className="relative aspect-video w-full bg-muted">
           {showScreen && screenTrack ? (
             <VideoTrack
-              trackRef={screenTrack}
+              trackRef={screenTrack} // track to render on page
               className="h-full w-full object-contain"
             />
           ) : showCamera && cameraTrack ? (

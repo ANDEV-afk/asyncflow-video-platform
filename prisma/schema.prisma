@@ -32,6 +32,7 @@ model Video {
   id           String     @id @default(cuid())
   title        String
   description  String?
+  s3key        String?
   videoUrl     String?
   thumbnailUrl String?
   duration     Int?
@@ -104,6 +105,7 @@ enum WorkspaceRole {
 enum Visibility {
   PRIVATE
   PUBLIC
+  UNLISTED
 }
 
 enum ProcessingStatus {

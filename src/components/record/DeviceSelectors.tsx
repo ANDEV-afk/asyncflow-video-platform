@@ -3,13 +3,13 @@
 import { Label } from "@/components/ui/label";
 
 type DeviceSelectorsProps = {
-  microphones: MediaDeviceInfo[];
+  microphones: MediaDeviceInfo[]; // media device popup for allow/disable at user side.
   cameras: MediaDeviceInfo[];
   selectedMic: string;
   selectedCamera: string;
-  onMicChange: (deviceId: string) => void;
+  onMicChange: (deviceId: string) => void; // if multiple mics.
   onCameraChange: (deviceId: string) => void;
-  disabled?: boolean;
+  disabled?: boolean; // if user does not allow initially so for handling that case.
   showCamera?: boolean;
 };
 
@@ -30,7 +30,7 @@ export default function DeviceSelectors({
         <select
           id="microphone"
           value={selectedMic}
-          onChange={(event) => onMicChange(event.target.value)} // js object event prop
+          onChange={(event) => onMicChange(event.target.value)} // js object event prop,mic change another one.
           disabled={disabled}
           className="h-10 w-full rounded-3xl border border-transparent bg-input/50 px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30 disabled:opacity-50"
         >
