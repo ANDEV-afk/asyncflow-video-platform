@@ -72,7 +72,7 @@ export default function EditVideoDialog({video,trigger}: EditVideoDialogProps) {
       onOpenChange={setOpen}
     >
       <DialogTrigger asChild>
-        {trigger ?? (
+        {trigger ?? ( // if trigger is not provided, then button will be rendered.
           <Button>
             Edit Video
           </Button>

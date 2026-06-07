@@ -11,7 +11,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuItem
 } from "@/components/ui/dropdown-menu";
-
+import ShareVideoDialog from "./ShareVideoDialog";
+import DownloadButton from "./DownloadButton";
 type VideoActionsProps = {
   video: Video;
 };
@@ -39,7 +40,7 @@ export default function VideoActions({
             trigger={
               <DropdownMenuItem
                 onSelect={(e) =>
-                  e.preventDefault()
+                  e.preventDefault() // matlab navigation na ho after clicking edit option.
                 }
               >
                 Edit
@@ -48,6 +49,15 @@ export default function VideoActions({
           />
         <DropdownMenuSeparator />
 
+        <ShareVideoDialog
+          videoId={video.id}
+          shareId={video.shareId}
+        />
+        <DropdownMenuSeparator />
+
+        <DownloadButton videoId={video.id} />
+        <DropdownMenuSeparator />
+        
         <DeleteVideoDialog
           videoId={video.id}
           trigger={

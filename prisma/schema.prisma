@@ -40,7 +40,7 @@ model Video {
   viewCount    Int        @default(0)
   fileSize     Int?
 
-  shareId String @unique @default(cuid())
+  shareId String @unique @default(cuid()) 
 
   processingStatus ProcessingStatus @default(UPLOADED)
 

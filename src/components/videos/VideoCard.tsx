@@ -14,6 +14,7 @@ type VideoCardProps = {
 export default function VideoCard({
   video,
 }: VideoCardProps) {
+  const videoLink = `/dashboard/my-videos/${video.id}`;
   return (
     <div className="overflow-hidden rounded-xl border transition hover:shadow-md">
 
@@ -23,7 +24,7 @@ export default function VideoCard({
         {/* Actions */}
         <div
           className="absolute left-3 top-3 z-20"
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()} // means stop propagation of event to parent elements.
         >
           {/* Click Delete
                   ↓
@@ -35,7 +36,7 @@ export default function VideoCard({
         </div>
 
         <Link
-          href={`/dashboard/my-videos/${video.id}`}
+          href={videoLink}
           className="block h-full w-full"
         >
           {video.thumbnailUrl ? (
@@ -43,7 +44,7 @@ export default function VideoCard({
               src={video.thumbnailUrl}
               alt={video.title}
               fill
-              className="object-cover"
+              className="object-cover transition hover:scale-[1.02]"
             />
           ) : (
             <div className="flex h-full items-center justify-center">
@@ -51,17 +52,15 @@ export default function VideoCard({
             </div>
           )}
 
-          <div className="absolute right-3 top-3 rounded-full bg-black/60 px-2 py-1 text-xs text-white">
-            {video.recordingType}
+          <div className="absolute right-3 top-3 rounded-full bg-black/60 px-2 py-1 text-xs font-medium text-white">
+            {video.recordingType ?? "VIDEO"}
           </div>
         </Link>
       </div>
 
       {/* Metadata */}
-      <Link
-        href={`/dashboard/my-videos/${video.id}`}
-      >
-        <div className="space-y-2 p-4">
+      <Link href={videoLink}>
+        <div className="space-y-3 p-4">
           <h3 className="line-clamp-1 font-semibold">
             {video.title}
           </h3>
@@ -78,6 +77,15 @@ export default function VideoCard({
             <span className="text-xs text-muted-foreground">
               {video.viewCount} views
             </span>
+
+            {video.duration && (
+              <span className="text-xs text-muted-foreground">
+                • {Math.floor(video.duration / 60)}:
+                {(video.duration % 60)
+                  .toString()
+                  .padStart(2, "0")}
+              </span>
+            )}
           </div>
         </div>
       </Link>

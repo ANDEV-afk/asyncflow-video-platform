@@ -16,7 +16,7 @@ import {
 
 type DeleteVideoDialogProps = {
   videoId: string;
-  trigger?: React.ReactNode;
+  trigger?: React.ReactNode; // all things which can be done on clicking button should be done.
 };
 
 export default function DeleteVideoDialog({videoId,trigger}: DeleteVideoDialogProps) {
