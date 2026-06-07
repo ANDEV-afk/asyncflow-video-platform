@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
 
-    const file = formData.get("video");
+    const file = formData.get("video"); // to get that blob from browser.
     const title =
       (formData.get("title") as string) ?? "Untitled Recording";
     const description = (formData.get("description") as string) || null; // getting these details from formdata at frontend to upload it to db.
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
           file.type,
       
         fileSize:
-          buffer.length,
+          buffer.length, // buffer size is here.
       
         recordingType:
           recordingType === "SCREEN"

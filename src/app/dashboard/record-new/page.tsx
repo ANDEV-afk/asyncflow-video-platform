@@ -103,7 +103,7 @@ export default function RecordNewPage() {
 
     try {
       const formData = new FormData();
-      formData.append("video", recordedBlob, `recording-${Date.now()}.webm`);
+      formData.append("video", recordedBlob, `recording-${Date.now()}.webm`); // recordedBlob of browser.
       formData.append("recordingType", mapRecordModeToType(recordMode));
       formData.append("title", videoTitle);
       formData.append("description", videoDescription);

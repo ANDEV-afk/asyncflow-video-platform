@@ -8,14 +8,14 @@ export type Recording = {
   createdAt: string;
 };
 
-const dummyRecordings: Recording[] = [];
+const ActualRecordings: Recording[] = [];
 
 type RecentVideosProps = {
   recordings?: Recording[];
 };
 
 export default function RecentVideos({
-  recordings = dummyRecordings,
+  recordings = ActualRecordings,
 }: RecentVideosProps) {
   return (
     <section className="space-y-4">
