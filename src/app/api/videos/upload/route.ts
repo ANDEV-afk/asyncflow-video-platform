@@ -23,15 +23,12 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
 
     const file = formData.get("video"); // to get that blob from browser.
-    const title =
-      (formData.get("title") as string) ?? "Untitled Recording";
+    const thumbnail =formData.get("thumbnail"); // to get thumbnail blob from formdata of frontend.
+    const title =(formData.get("title") as string) ?? "Untitled Recording";
     const description = (formData.get("description") as string) || null; // getting these details from formdata at frontend to upload it to db.
     const visibilityValue = formData.get("visibility") as string | null;
-    const visibility: Visibility =
-      visibilityValue === Visibility.PUBLIC ||
-      visibilityValue === Visibility.UNLISTED
-        ? visibilityValue
-        : Visibility.PRIVATE;
+    const visibility: Visibility = visibilityValue === Visibility.PUBLIC || 
+    visibilityValue === Visibility.UNLISTED? visibilityValue: Visibility.PRIVATE;
     const recordingType = formData.get("recordingType") as string;
 
     if (!(file instanceof File)) {
@@ -40,9 +37,26 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    let thumbnailKey: string | null = null;
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    if (thumbnail instanceof File) {
+      const thumbnailBytes =await thumbnail.arrayBuffer();
+
+      const thumbnailBuffer =Buffer.from(thumbnailBytes);
+      thumbnailKey =`${session.user.id}/thumbnails/${Date.now()}.jpg`;
+      await s3.send(
+        new PutObjectCommand({
+          Bucket:
+            process.env.AWS_BUCKET_NAME,
+          Key:thumbnailKey,
+          Body:thumbnailBuffer,
+          ContentType:thumbnail.type || "image/jpeg",
+        })
+      );
+    }
+
+    const bytes = await file.arrayBuffer(); // array buffer coming from browser frontend(this file is video file not thumbnail)
+    const buffer = Buffer.from(bytes); // converting to node js buffer from arraybuffer as s3 handles node buffer not browser one.
 
     const key =
       `${session.user.id}/${Date.now()}.webm`;
@@ -52,13 +66,9 @@ export async function POST(request: NextRequest) {
 
     await s3.send(
       new PutObjectCommand({
-        Bucket:
-          process.env.AWS_BUCKET_NAME,
-
+        Bucket:process.env.AWS_BUCKET_NAME,
         Key: key, // for aws to identify files internally.
-
-        Body: buffer, // NODEJS buffer.
-
+        Body: buffer, // Nodejs buffer.
         ContentType:
           file.type || "video/webm",
       })
@@ -72,19 +82,11 @@ export async function POST(request: NextRequest) {
         userId: session.user.id,
         videoUrl: `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`,
         s3key: key,
-      
-        mimeType:
-          file.type,
-      
-        fileSize:
-          buffer.length, // buffer size is here.
-      
+        thumbnailKey,      
+        mimeType:file.type,
+        fileSize:buffer.length, // buffer size is here.
         recordingType:
-          recordingType === "SCREEN"
-            ? "SCREEN"
-            : recordingType === "CAMERA"
-            ? "CAMERA"
-            : "SCREEN_AND_CAMERA",
+          recordingType === "SCREEN"? "SCREEN": recordingType === "CAMERA"? "CAMERA": "SCREEN_AND_CAMERA",
       }
     });
 

@@ -24,6 +24,7 @@ import RecordingStudio from "@/components/record/RecordingStudio";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { mapRecordModeToType, type RecordMode } from "@/components/record/types";
+import { generateThumbnail } from "@/lib/generateThumbnail";  
 
 type LiveKitSession = {
   token: string;
@@ -102,8 +103,10 @@ export default function RecordNewPage() {
     setUploadError(null);
 
     try {
+      const thumbnailBlob =await generateThumbnail(recordedBlob); // generating blob of thumbnail.
       const formData = new FormData();
       formData.append("video", recordedBlob, `recording-${Date.now()}.webm`); // recordedBlob of browser.
+      formData.append("thumbnail",thumbnailBlob,"thumbnail.jpg");
       formData.append("recordingType", mapRecordModeToType(recordMode));
       formData.append("title", videoTitle);
       formData.append("description", videoDescription);

@@ -1,29 +1,23 @@
-import { Card, CardContent } from "@/components/ui/card";
+import { Video } from "@/generated/prisma/client";
 import EmptyState from "@/components/dashboard/EmptyState";
+import VideoCard from "@/components/videos/VideoCard";
 
-export type Recording = {
-  id: string;
-  title: string;
-  duration: string;
-  createdAt: string;
+type VideoWithThumbnail = Video & {
+  thumbnailUrl: string | null;
 };
-
-const ActualRecordings: Recording[] = [];
 
 type RecentVideosProps = {
-  recordings?: Recording[];
+  videos: VideoWithThumbnail[];
 };
 
-export default function RecentVideos({
-  recordings = ActualRecordings,
-}: RecentVideosProps) {
+export default function RecentVideos({ videos }: RecentVideosProps) {
   return (
     <section className="space-y-4">
       <h2 className="text-lg font-semibold tracking-tight">
         Recent Recordings
       </h2>
 
-      {recordings.length === 0 ? (
+      {videos.length === 0 ? (
         <EmptyState
           title="No recordings yet"
           description="Start your first async recording"
@@ -31,17 +25,9 @@ export default function RecentVideos({
           actionHref="/dashboard/record-new"
         />
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {recordings.map((recording) => (
-            <Card key={recording.id} className="overflow-hidden">
-              <div className="aspect-video bg-muted" />
-              <CardContent className="space-y-1 p-4">
-                <p className="font-medium">{recording.title}</p>
-                <p className="text-sm text-muted-foreground">
-                  {recording.duration} · {recording.createdAt}
-                </p>
-              </CardContent>
-            </Card>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {videos.map((video) => (
+            <VideoCard key={video.id} video={video} />
           ))}
         </div>
       )}

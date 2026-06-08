@@ -65,7 +65,7 @@ async function buildCompositeStream(
   let frameId = 0;
   const draw = () => {
     ctx.drawImage(screenVideo, 0, 0, canvas.width, canvas.height); // every frame draw on canvas that captured while recording.
-    ctx.drawImage(
+    ctx.drawImage( // first screen draw now camera draw
       cameraVideo,
       canvas.width - pipWidth - 24,
       canvas.height - pipHeight - 24,

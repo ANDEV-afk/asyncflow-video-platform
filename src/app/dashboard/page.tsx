@@ -1,12 +1,12 @@
-"use client";
-
-import { useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useSession } from "@/lib/auth-client";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
 import StatsCards from "@/components/dashboard/StatsCards";
 import RecentVideos from "@/components/dashboard/RecentVideos";
+import { generateThumbnailSignedUrl } from "@/lib/generateThumbnailSignedUrl";
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -16,31 +16,52 @@ function getGreeting() {
   return "Good Evening";
 }
 
-export default function DashboardPage() {
-  const router = useRouter();
-  const { data: session, isPending } = useSession();
-
-  useEffect(() => {
-    if (!isPending && !session?.user) {
-      router.push("/sign-in");
-    }
-  }, [isPending, session, router]);
-
-  if (isPending) {
-    return (
-      <div className="flex flex-1 items-center justify-center p-6">
-        <p className="text-sm text-muted-foreground">Loading...</p>
-      </div>
-    );
-  }
+export default async function DashboardPage() {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
   if (!session?.user) {
-    return (
-      <div className="flex flex-1 items-center justify-center p-6">
-        <p className="text-sm text-muted-foreground">Redirecting...</p>
-      </div>
-    );
+    redirect("/sign-in");
   }
+
+  const userId = session.user.id;
+
+  const [totalVideos, totalViews, totalStorage, rawRecentVideos] =
+    await Promise.all([ // GET ALL THE DATA ONCE BY RESOLVING THE PROMISE, IF ONE REJECT THEN PARENT PROMISE REJECT.
+      prisma.video.count({
+        where: { userId },
+      }),
+      prisma.video.aggregate({
+        where: { userId },
+        _sum: { viewCount: true },
+      }),
+      prisma.video.aggregate({ // FOR TOTALLING NOT JUST COUNT 
+        where: { userId },
+        _sum: { fileSize: true },
+      }),
+      prisma.video.findMany({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+      }),
+    ]);
+
+  const stats = { // GIVING PROPS TO COMPONENT BELOW.
+    videos: totalVideos,
+    views: totalViews._sum.viewCount ?? 0, // LEFTHAND OPERAND IF NOT NULL OR UNDEFINED OTHERWISE RIGHT ONE.
+    storage: `${((totalStorage._sum.fileSize ?? 0) / 1024 / 1024).toFixed(1)} MB`, // BYTES TO MEGABYTES WITH TOFIXED() FOR ROUND-OFF.
+    workspaces: 0,
+  };
+
+  const recentVideos = await Promise.all( // SAME HERE PROMISE.ALL LOGIC LIKE AS ABOVE.
+    rawRecentVideos.map(async (video) => ({
+      ...video,
+      thumbnailUrl: video.thumbnailKey
+        ? await generateThumbnailSignedUrl(video.thumbnailKey)
+        : null,
+    }))
+  );
 
   return (
     <div className="space-y-8">
@@ -56,8 +77,8 @@ export default function DashboardPage() {
         </Button>
       </section>
 
-      <StatsCards />
-      <RecentVideos />
+      <StatsCards stats={stats} />
+      <RecentVideos videos={recentVideos} />
     </div>
   );
 }

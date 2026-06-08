@@ -1,7 +1,7 @@
 import {
   Clapperboard,
-  MessageSquare,
-  Sparkles,
+  Eye,
+  HardDrive,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -9,16 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export type DashboardStats = {
   videos: number;
+  views: number;
+  storage: string;
   workspaces: number;
-  comments: number;
-  aiNotes: number;
-};
-
-const dummyStats: DashboardStats = {
-  videos: 0,
-  workspaces: 0,
-  comments: 0,
-  aiNotes: 0,
 };
 
 const statItems: {
@@ -27,16 +20,16 @@ const statItems: {
   icon: LucideIcon;
 }[] = [
   { key: "videos", label: "Videos", icon: Clapperboard },
+  { key: "views", label: "Total Views", icon: Eye },
+  { key: "storage", label: "Storage Used", icon: HardDrive },
   { key: "workspaces", label: "Workspaces", icon: Users },
-  { key: "comments", label: "Comments", icon: MessageSquare },
-  { key: "aiNotes", label: "AI Notes", icon: Sparkles },
 ];
 
 type StatsCardsProps = {
-  stats?: DashboardStats;
+  stats: DashboardStats;
 };
 
-export default function StatsCards({ stats = dummyStats }: StatsCardsProps) {
+export default function StatsCards({ stats }: StatsCardsProps) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {statItems.map((item) => (

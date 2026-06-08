@@ -34,7 +34,7 @@ model Video {
   description  String?
   s3key        String?
   videoUrl     String?
-  thumbnailUrl String?
+  thumbnailKey String?
   duration     Int?
   visibility   Visibility @default(PRIVATE)
   viewCount    Int        @default(0)
