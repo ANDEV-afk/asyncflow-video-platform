@@ -13,19 +13,21 @@ datasource db {
 }
 
 model User {
-  id            String            @id @default(cuid())
-  email         String            @unique
-  name          String  
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
-  videos        Video[]
-  comments      Comment[]
-  workspaces    WorkspaceMember[]
-  emailVerified Boolean           @default(false)
-  image         String?
-  sessions      Session[]
-  accounts      Account[]
-
+  id                   String            @id @default(cuid())
+  email                String            @unique
+  name                 String
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  videos               Video[]
+  comments             Comment[]
+  workspaceMemberships WorkspaceMember[]
+  emailVerified        Boolean           @default(false)
+  image                String?
+  sessions             Session[]
+  accounts             Account[]
+  ownedWorkspace       Workspace[]       @relation("WorkspaceOwner") //workspace i owned or the head of it.
+  sentInvites          WorkspaceInvite[] @relation("SentInvites")
+  receivedInvites      WorkspaceInvite[] @relation("ReceivedInvites")
 }
 
 model Video {
@@ -40,14 +42,14 @@ model Video {
   viewCount    Int        @default(0)
   fileSize     Int?
 
-  shareId String @unique @default(cuid()) 
+  shareId String @unique @default(cuid())
 
   processingStatus ProcessingStatus @default(UPLOADED)
 
-  userId      String
-  workspaceId String?
-  mimeType    String?
-  recordingType    RecordingType?
+  userId        String
+  workspaceId   String?
+  mimeType      String?
+  recordingType RecordingType?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -71,15 +73,23 @@ model Video {
 }
 
 model Workspace {
-  id   String @id @default(cuid())
-  name String
-  slug String @unique
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique
+  description String?
+
+  ownerId String
+
+  owner User @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   members WorkspaceMember[]
   videos  Video[]
+  invites WorkspaceInvite[]
+
+  @@index([ownerId]) // for getting all workspaces of the owner very fast.
 }
 
 model WorkspaceMember {
@@ -94,6 +104,34 @@ model WorkspaceMember {
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([userId, workspaceId])
+}
+
+model WorkspaceInvite {
+  id String @id @default(cuid())
+
+  workspaceId   String
+  invitedUserId String
+  invitedById   String
+
+  role WorkspaceRole @default(MEMBER)
+
+  status InviteStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  invitedUser User @relation("ReceivedInvites", fields: [invitedUserId], references: [id], onDelete: Cascade)
+
+  invitedBy User @relation("SentInvites", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, invitedUserId])
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
 }
 
 enum WorkspaceRole {

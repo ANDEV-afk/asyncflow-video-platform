@@ -64,7 +64,6 @@ export async function DELETE(request: NextRequest,{params}: {params: Promise<{vi
   const session = await auth.api.getSession({
     headers: await headers(),
   });
-  console.log(session);
   if (!session?.user) {
     return NextResponse.json(
       { error: "Unauthorized" },

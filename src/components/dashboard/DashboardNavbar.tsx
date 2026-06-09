@@ -19,6 +19,23 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { toast } from "sonner";
+
+type Invite = {
+  id: string;
+
+  workspace: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+
+  invitedBy: {
+    id: string;
+    name: string;
+    email: string;
+  };
+};
 
 // --- Helpers ---
 
@@ -60,31 +77,186 @@ function useClickOutside(
 // --- Sub-components ---
 
 function NotificationsSheet() {
+  const [invites, setInvites] =
+    useState<Invite[]>([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  useEffect(() => {loadInvites()}, []);
+
+  async function loadInvites() {
+    try {
+      setLoading(true);
+  
+      const res = await fetch("/api/invites", {
+        method: "GET",
+        credentials: "include",
+      });
+  
+      if (!res.ok) {
+        throw new Error(
+          `Request failed: ${res.status}`
+        );
+      }
+      const contentType =
+        res.headers.get("content-type");
+  
+      if (
+        !contentType?.includes(
+          "application/json"
+        )
+      ) {
+        const html = await res.text();
+        console.error(
+          "Expected JSON but received:",
+          html
+        );
+        throw new Error("API did not return JSON");
+      }
+      const data = await res.json();
+      setInvites(data);
+    } catch (error) {
+      console.error(error);
+      toast.error(
+        "Failed to load notifications"
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleAccept(inviteId: string) {
+    try {
+      const res = await fetch(`/api/invites/${inviteId}/accept`,
+        {
+          method: "POST",
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error();
+      }
+
+      setInvites((prev) =>
+        prev.filter(
+          (invite) =>
+            invite.id !== inviteId
+        )
+      );
+
+      toast.success("Workspace joined successfully");
+    } catch {
+      toast.error(
+        "Failed to accept invite"
+      );
+    }
+  }
+
+  async function handleReject(
+    inviteId: string
+  ) {
+    try {
+      const res = await fetch(
+        `/api/invites/${inviteId}/reject`,
+        {
+          method: "POST",
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error();
+      }
+
+      setInvites((prev) =>prev.filter((invite) =>
+            invite.id !== inviteId
+        )
+      );
+
+      toast.success(
+        "Invite rejected"
+      );
+    } catch {
+      toast.error(
+        "Failed to reject invite"
+      );
+    }
+  }
+
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button
+          variant="outline"
+          size="sm"
+          className="relative"
+        >
           Notifications
+
+          {invites.length > 0 && (
+            <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+              {invites.length}
+            </span>
+          )}
         </Button>
       </SheetTrigger>
 
-      <SheetContent side="right" className="w-full sm:max-w-md">
+      <SheetContent
+        side="right"
+        className="w-full sm:max-w-md"
+      >
         <SheetHeader>
-          <SheetTitle>Notifications</SheetTitle>
+          <SheetTitle>
+            Notifications
+          </SheetTitle>
+
           <SheetDescription>
-            Your recent activity will appear here.
+            Workspace invites
           </SheetDescription>
         </SheetHeader>
 
-        <div className="px-4">
-          <p className="text-sm text-muted-foreground">
-            No notifications yet.
-          </p>
+        <div className="space-y-4 px-4 py-4">
+          {loading ? (
+            <p className="text-sm text-muted-foreground">
+              Loading...
+            </p>
+          ) : invites.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No notifications yet.
+            </p>
+          ) : (
+            invites.map((invite) => (
+              <div
+                key={invite.id}
+                className="rounded-lg border p-4"
+              >
+                <h4 className="font-medium">
+                  {invite.workspace.name}
+                </h4>
+
+                <p className="text-sm text-muted-foreground">
+                  Invited by{" "}
+                  {invite.invitedBy.name}
+                </p>
+
+                <div className="mt-3 flex gap-2">
+                  <Button size="sm" onClick={() => handleAccept(invite.id)}>
+                    Accept
+                  </Button>
+                  <Button size="sm"variant="outline" onClick={() =>handleReject(invite.id)}>
+                    Reject
+                  </Button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
 
         <SheetFooter>
           <SheetClose asChild>
-            <Button variant="outline">Close</Button>
+            <Button variant="outline">
+              Close
+            </Button>
           </SheetClose>
         </SheetFooter>
       </SheetContent>
