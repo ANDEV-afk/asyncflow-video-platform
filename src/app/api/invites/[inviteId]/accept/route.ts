@@ -47,18 +47,6 @@ export async function POST(request: NextRequest,{params}: {params: Promise<{ inv
         }
       );
     }
-    // INVITE STATUS PENDING should be otherwise processed already.
-    if (invite.status !== "PENDING") {
-      return NextResponse.json(
-        {
-          error:
-            "Invite already processed",
-        },
-        {
-          status: 400,
-        }
-      );
-    }
     // NOW WORKSPACE MEMBER CREATION AND UPDATION OF INVITE STATUS IN A TRANSACTION.
     await prisma.$transaction(
       async (tx) => {
@@ -75,13 +63,9 @@ export async function POST(request: NextRequest,{params}: {params: Promise<{ inv
           },
         });
 
-        await tx.workspaceInvite.update({
+        await tx.workspaceInvite.delete({
           where: {
             id: invite.id,
-          },
-          data: {
-            status:
-              "ACCEPTED",
           },
         });
       }

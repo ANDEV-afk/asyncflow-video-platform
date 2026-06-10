@@ -47,25 +47,9 @@ export async function POST(request: Request,{ params }: {params: Promise<{ invit
       );
     }
 
-    if (invite.status !== "PENDING") {
-      return NextResponse.json(
-        {
-          error:
-            "Invite already processed",
-        },
-        {
-          status: 400,
-        }
-      );
-    }
-
-    await prisma.workspaceInvite.update({
+    await prisma.workspaceInvite.delete({
       where: {
         id: inviteId,
-      },
-      data: {
-        status:
-          "REJECTED",
       },
     });
 

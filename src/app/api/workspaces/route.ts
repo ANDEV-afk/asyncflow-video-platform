@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
   };
 };
 
-export async function GET(request: NextRequest){
+export async function GET(){
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -78,17 +78,26 @@ export async function GET(request: NextRequest){
   }
 
   try {
-    const workspaces = await prisma.workspace.findMany({
-      where: {
-        ownerId: session.user.id
-      },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        description: true,
-      }
-    });
+    const memberships =
+      await prisma.workspaceMember.findMany({
+        where: {
+          userId: session.user.id,
+        },
+        select: {
+          workspace: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              description: true,
+            },
+          },
+        },
+      });
+
+    const workspaces = memberships.map(
+      (membership) => membership.workspace
+    );
 
     if (workspaces.length === 0) {
       return NextResponse.json([]) // findMany returns null here.

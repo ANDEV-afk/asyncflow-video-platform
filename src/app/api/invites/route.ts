@@ -23,7 +23,6 @@ export async function GET(request:NextRequest) {
     const invites = await prisma.workspaceInvite.findMany({ // if multiple invites i received for that get request.
         where: {
           invitedUserId:session.user.id, // if multiple invites are in table then for my userid give me.
-          status: "PENDING",
         },
 
         include: {

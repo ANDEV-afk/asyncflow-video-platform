@@ -2,8 +2,10 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import { headers } from "next/headers";
-import DashboardPageHeader from "@/components/dashboard/DashboardPageHeader";
-import CreateInviteDialog from "@/components/workspaces/CreateInviteDialog";
+import EditWorkspaceDialog from "@/components/workspaces/EditWorkspaceDialog";
+import VideoCard from "@/components/videos/VideoCard";
+import { addThumbnailUrls } from "@/lib/videos";
+import { Button } from "@/components/ui/button";
 
 export default async function WorkspacePage({params}: {
   params: Promise<{ workspaceId: string }>;
@@ -31,6 +33,11 @@ export default async function WorkspacePage({params}: {
         },
 
         videos: {
+          where: {
+            visibility: {
+              not: "PRIVATE",
+            },
+          },
           orderBy: {
             createdAt: "desc",
           },
@@ -38,65 +45,63 @@ export default async function WorkspacePage({params}: {
       },
     });
 
+
   if (!workspace) {
     notFound();
   }
 
-  const membership = workspace.members.find((member) =>member.userId === session.user.id); // so that after clicking on workspace other authorized members can access it.
+  const membership = workspace.members.find(
+    (member) => member.userId === session.user.id
+  );
 
   if (!membership) {
-  notFound();
+    notFound();
   }
+
+  const isOwner = membership.role === "OWNER";
+  const owner = workspace.members.find(
+    (member) => member.role === "OWNER"
+  );
+
+  const videosWithThumbnails =
+    await addThumbnailUrls(workspace.videos);
 
   return (
     <div className="space-y-8">
       <div className="flex items-start justify-between">
-        <DashboardPageHeader
-          title={workspace.name}
-          description="Workspace Details"
-        />
-        <CreateInviteDialog workspaceId={workspace.id} />
+        <div>
+          <p className="text-sm text-muted-foreground">
+            Owner:{" "}
+            {owner?.user.name ?? "Unknown"}
+          </p>
+        </div>
+
+        {isOwner && (
+          <EditWorkspaceDialog
+            workspaceId={workspace.id}
+            name={workspace.name}
+            description={workspace.description}
+            trigger={
+              <Button variant="outline" size="sm">
+                Edit
+              </Button>
+            }
+          />
+        )}
       </div>
 
-      {/* Description */}
       <div className="rounded-lg border p-4">
-        <h3 className="font-semibold mb-2">
+        <h3 className="mb-2 font-semibold">
           Description
         </h3>
 
         <p className="text-muted-foreground">
-          {workspace.description || "No description provided."}
+          {workspace.description ||
+            "No description provided."}
         </p>
       </div>
 
-      {/* Members */}
       <div className="rounded-lg border p-4">
-        <h3 className="mb-4 font-semibold">
-          Members
-        </h3>
-
-      <div className="space-y-3">
-        {workspace.members.map(
-          (member) => (
-            <div
-              key={member.id}
-              className="flex items-center justify-between"
-            >
-              <span>
-                {member.user.name}
-              </span>
-
-              <span className="rounded-full border px-2 py-1 text-xs">
-                {member.role}
-              </span>
-            </div>
-          )
-        )}
-      </div>
-    </div>
-
-    {/* Videos */}
-    <div className="rounded-lg border p-4">
         <h3 className="mb-4 font-semibold">
           Videos
         </h3>
@@ -106,24 +111,19 @@ export default async function WorkspacePage({params}: {
             No videos yet
           </p>
         ) : (
-          <div className="space-y-3">
-            {workspace.videos.map( // RENDERING THE VIDEOS OF THE WORKSPACE
-              (video) => (
-                <div
-                  key={video.id}
-                  className="rounded border p-3"
-                >
-                  {video.title}
-                </div>
-              )
-            )}
+          <div className="grid grid-cols-4 space-x-4">
+            {videosWithThumbnails.map((video) => (
+              <VideoCard
+                key={video.id}
+                video={video}
+              />
+            ))}
           </div>
         )}
       </div>
 
-      {/* Dates */}
       <div className="rounded-lg border p-4">
-        <h3 className="font-semibold mb-2">
+        <h3 className="mb-2 font-semibold">
           Created
         </h3>
 
@@ -133,5 +133,4 @@ export default async function WorkspacePage({params}: {
       </div>
     </div>
   );
-
 }

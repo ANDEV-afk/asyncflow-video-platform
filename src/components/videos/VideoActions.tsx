@@ -1,6 +1,6 @@
 "use client";
 import { MoreVertical } from "lucide-react";
-import { Video } from "@/generated/prisma/client";
+import { Video } from "@/types/video";
 import EditVideoDialog from "./EditVideoDialog";
 import DeleteVideoDialog from "./DeleteVideoDialog";
 import { Button } from "@/components/ui/button";
@@ -50,8 +50,14 @@ export default function VideoActions({
         <DropdownMenuSeparator />
 
         <ShareVideoDialog
-          videoId={video.id}
-          shareId={video.shareId}
+          video={video}
+          trigger={
+            <DropdownMenuItem
+              onSelect={(e) => e.preventDefault()}
+            >
+              Share
+            </DropdownMenuItem>
+          }
         />
         <DropdownMenuSeparator />
 

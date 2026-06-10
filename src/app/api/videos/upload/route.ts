@@ -4,6 +4,7 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { Visibility } from "@/generated/prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { resolveVideoWorkspaceId } from "@/lib/video-workspace";
 import { s3 } from "@/lib/s3";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -20,6 +21,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    
     const formData = await request.formData();
 
     const file = formData.get("video"); // to get that blob from browser.
@@ -30,6 +32,19 @@ export async function POST(request: NextRequest) {
     const visibility: Visibility = visibilityValue === Visibility.PUBLIC || 
     visibilityValue === Visibility.UNLISTED? visibilityValue: Visibility.PRIVATE;
     const recordingType = formData.get("recordingType") as string;
+    const workspaceId = formData.get("workspaceId") as string | null; 
+
+    if (workspaceId &&visibility === Visibility.PRIVATE) {
+      return NextResponse.json(
+        {
+          error:
+            "Private videos cannot be uploaded to a workspace",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
 
     if (!(file instanceof File)) {
       return NextResponse.json(
@@ -74,6 +89,20 @@ export async function POST(request: NextRequest) {
       })
     );
 
+    const workspaceResult =
+      await resolveVideoWorkspaceId({
+        visibility,
+        workspaceId: workspaceId || null,
+        userId: session.user.id,
+      });
+
+    if ("error" in workspaceResult) {
+      return NextResponse.json(
+        { error: workspaceResult.error },
+        { status: workspaceResult.status }
+      );
+    }
+
     const video = await prisma.video.create({
       data: {
         title,
@@ -84,6 +113,7 @@ export async function POST(request: NextRequest) {
         s3key: key,
         thumbnailKey,      
         mimeType:file.type,
+        workspaceId: workspaceResult.workspaceId,
         fileSize:buffer.length, // buffer size is here.
         recordingType:
           recordingType === "SCREEN"? "SCREEN": recordingType === "CAMERA"? "CAMERA": "SCREEN_AND_CAMERA",

@@ -115,8 +115,6 @@ model WorkspaceInvite {
 
   role WorkspaceRole @default(MEMBER)
 
-  status InviteStatus @default(PENDING)
-
   createdAt DateTime @default(now())
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -128,15 +126,9 @@ model WorkspaceInvite {
   @@unique([workspaceId, invitedUserId])
 }
 
-enum InviteStatus {
-  PENDING
-  ACCEPTED
-  REJECTED
-}
 
 enum WorkspaceRole {
   OWNER
-  ADMIN
   MEMBER
 }
 

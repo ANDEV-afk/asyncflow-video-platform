@@ -27,7 +27,7 @@ export default async function DashboardPage() {
 
   const userId = session.user.id;
 
-  const [totalVideos, totalViews, totalStorage, rawRecentVideos] =
+  const [totalVideos, totalViews, totalStorage, rawRecentVideos,totalWorkspaces] =
     await Promise.all([ // GET ALL THE DATA ONCE BY RESOLVING THE PROMISE, IF ONE REJECT THEN PARENT PROMISE REJECT.
       prisma.video.count({
         where: { userId },
@@ -45,13 +45,16 @@ export default async function DashboardPage() {
         orderBy: { createdAt: "desc" },
         take: 5,
       }),
+      prisma.workspaceMember.count({
+        where: { userId }
+      })
     ]);
 
   const stats = { // GIVING PROPS TO COMPONENT BELOW.
     videos: totalVideos,
     views: totalViews._sum.viewCount ?? 0, // LEFTHAND OPERAND IF NOT NULL OR UNDEFINED OTHERWISE RIGHT ONE.
     storage: `${((totalStorage._sum.fileSize ?? 0) / 1024 / 1024).toFixed(1)} MB`, // BYTES TO MEGABYTES WITH TOFIXED() FOR ROUND-OFF.
-    workspaces: 0,
+    workspaces: totalWorkspaces,
   };
 
   const recentVideos = await Promise.all( // SAME HERE PROMISE.ALL LOGIC LIKE AS ABOVE.

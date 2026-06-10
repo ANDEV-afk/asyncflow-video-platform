@@ -1,6 +1,6 @@
 "use client";
 
-import { Video } from "@/generated/prisma/client";
+import { Video } from "@/types/video";
 import VideoCard from "./VideoCard";
 import { useMyVideosSearch } from "./MyVideosSearchContext";
 

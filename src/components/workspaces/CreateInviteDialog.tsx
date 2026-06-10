@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import {
@@ -19,6 +20,7 @@ export default function CreateInviteDialog({
 }: {
   workspaceId: string;
 }) {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -48,6 +50,7 @@ export default function CreateInviteDialog({
       toast.success("Invite sent");
 
       setEmail("");
+      router.refresh();
     } catch (error) {
       toast.error(
         error instanceof Error

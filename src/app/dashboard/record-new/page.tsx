@@ -48,6 +48,31 @@ export default function RecordNewPage() {
   const [videoTitle, setVideoTitle] = useState("");
   const [videoDescription, setVideoDescription] = useState("");
   const [visibility, setVisibility] = useState("PRIVATE");
+  const [workspaces,setWorkspaces] = useState<{id: string; name: string}[]>([]);
+  const [selectedWorkspace,setSelectedWorkspace] = useState<string>("personal"); // by default personal workspace.
+
+  useEffect(()=> { // on first component mount,before createSession occurs fetch the workspaces data first.
+    async function loadWorkspaces () {
+      try {
+        const res = await fetch("/api/workspaces");
+        if(!res.ok) return;
+
+        const data = await res.json(); // await for promise resolve.
+
+        setWorkspaces(data);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    loadWorkspaces();
+  },[])
+
+  useEffect(() => {
+    if (selectedWorkspace !== "personal" && visibility === "PRIVATE") {
+      setVisibility("UNLISTED");
+    }
+  }, [selectedWorkspace, visibility]);
 
   const createSession = useCallback(async () => {
     setIsConnecting(true);
@@ -112,6 +137,10 @@ export default function RecordNewPage() {
       formData.append("description", videoDescription);
       formData.append("visibility", visibility);
 
+      if (selectedWorkspace !== "personal") {
+        formData.append("workspaceId",selectedWorkspace);
+      }
+
       const response = await fetch("/api/videos/upload", {
         method: "POST",
         body: formData,
@@ -141,6 +170,7 @@ export default function RecordNewPage() {
     videoDescription,
     visibility,
     router,
+    selectedWorkspace
   ]);
 
   const handleRecordAgain = useCallback(() => {
@@ -239,16 +269,48 @@ export default function RecordNewPage() {
               onChange={(e) => setVideoDescription(e.target.value)}
             />
 
-            <Select value={visibility} onValueChange={setVisibility}>
+        <Select value={visibility} onValueChange={setVisibility}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+
+            <SelectContent>
+
+              {selectedWorkspace === "personal" && (
+                <SelectItem value="PRIVATE">
+                  Private
+                </SelectItem>
+              )}
+
+              <SelectItem value="UNLISTED">
+                Unlisted
+              </SelectItem>
+
+              <SelectItem value="PUBLIC">
+                Public
+              </SelectItem>
+
+            </SelectContent>
+        </Select>
+
+            {/*WORKSPACE SELECTION */}
+
+            <Select value={selectedWorkspace} onValueChange={setSelectedWorkspace} >
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue placeholder="Select Workspace"/>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="PRIVATE">Private</SelectItem>
-                <SelectItem value="UNLISTED">Unlisted</SelectItem>
-                <SelectItem value="PUBLIC">Public</SelectItem>
+              <SelectItem value="personal">Personal</SelectItem>
+
+              {workspaces.map((workspace)=> (
+                <SelectItem key={workspace.id} value={workspace.id}>{workspace.name}</SelectItem>
+              ))}
               </SelectContent>
             </Select>
+
+            {selectedWorkspace !== "personal" && (
+            <p className="text-xs text-muted-foreground">Workspace videos cannot be private.</p>
+            )}
 
             {uploadError ? (
               <p className="text-sm text-destructive">{uploadError}</p>

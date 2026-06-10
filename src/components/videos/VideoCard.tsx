@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Calendar, Eye, Play } from "lucide-react";
-import { Visibility, Video } from "@/generated/prisma/client";
+import { Visibility, Video } from "@/types/video";
 import VideoActions from "./VideoActions";
 
 type VideoWithThumbnail = Video & {

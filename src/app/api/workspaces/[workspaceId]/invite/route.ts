@@ -31,7 +31,7 @@ export async function POST(request:NextRequest,{params}: {params: Promise<{works
       );
     }
 
-    // Verify inviter is OWNER/ADMIN
+    // Verify inviter is OWNER
 
     const membership =
       await prisma.workspaceMember.findFirst({
@@ -41,7 +41,7 @@ export async function POST(request:NextRequest,{params}: {params: Promise<{works
         },
       });
 
-    if (!membership || (membership.role !== "OWNER" &&membership.role !== "ADMIN")) {
+    if (!membership || (membership.role !== "OWNER")) {
       return NextResponse.json(
         {
           error: "Forbidden",
@@ -103,7 +103,6 @@ export async function POST(request:NextRequest,{params}: {params: Promise<{works
       where: {
         workspaceId,
         invitedUserId: user.id,
-        status: "PENDING"
       }
     });
 
@@ -138,7 +137,7 @@ export async function POST(request:NextRequest,{params}: {params: Promise<{works
       }
     );
   } catch (error) {
-    console.error(error);
+    console.error("INVITE ERROR: ",error);
     return NextResponse.json(
       {error:"Failed to send invite"},
       {status: 500}

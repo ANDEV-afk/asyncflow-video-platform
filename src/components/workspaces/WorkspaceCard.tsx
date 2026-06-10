@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Workspace } from "@/generated/prisma/client";
+import { Workspace } from "@/types/workspace";
 
 type WorkspaceCardProps = {
   workspace: Workspace;
