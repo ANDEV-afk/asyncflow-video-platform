@@ -1,6 +1,12 @@
+import { headers } from "next/headers";
+
+import { auth } from "@/lib/auth";
 import { generateSignedUrl } from "@/lib/generateSignedUrl";
+import { getVideoComments } from "@/lib/comments";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+import VideoComments from "@/components/comments/VideoComments";
+import type { CommentUser } from "@/types/comment";
 
 export default async function SharePage({
   params,
@@ -8,6 +14,9 @@ export default async function SharePage({
   params: Promise<{ shareId: string }>;
 }) {
   const { shareId } = await params;
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
   const video =
     await prisma.video.findUnique({
@@ -42,8 +51,20 @@ export default async function SharePage({
     },
   });
 
+  const comments = await getVideoComments(
+    video.id,
+    session?.user?.id ?? null
+  );
+  const currentUser: CommentUser | null = session?.user
+    ? {
+        id: session.user.id,
+        name: session.user.name,
+        image: session.user.image ?? null,
+      }
+    : null;
+
   return (
-    <div className="mx-auto max-w-5xl p-8">
+    <div className="mx-auto max-w-5xl space-y-8 p-8">
       <h1 className="text-4xl font-bold">
         {video.title}
       </h1>
@@ -60,6 +81,12 @@ export default async function SharePage({
         controls
         src={signedUrl}
         className="mt-6 w-full rounded-lg"
+      />
+
+      <VideoComments
+        videoId={video.id}
+        initialComments={comments}
+        currentUser={currentUser}
       />
     </div>
   );

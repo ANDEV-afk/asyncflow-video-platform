@@ -79,29 +79,28 @@ function useClickOutside(
 function NotificationsSheet() {
   const [invites, setInvites] =
     useState<Invite[]>([]);
+  const [open, setOpen] = useState(false);
 
   const [loading, setLoading] =
     useState(true);
 
-  useEffect(() => {loadInvites()}, []);
-
   async function loadInvites() {
     try {
       setLoading(true);
-  
+
       const res = await fetch("/api/invites", {
         method: "GET",
         credentials: "include",
       });
-  
+
       if (!res.ok) {
         throw new Error(
           `Request failed: ${res.status}`
         );
       }
-      const contentType =
-        res.headers.get("content-type");
-  
+
+      const contentType = res.headers.get("content-type");
+
       if (
         !contentType?.includes(
           "application/json"
@@ -114,6 +113,7 @@ function NotificationsSheet() {
         );
         throw new Error("API did not return JSON");
       }
+
       const data = await res.json();
       setInvites(data);
     } catch (error) {
@@ -126,9 +126,15 @@ function NotificationsSheet() {
     }
   }
 
-  async function handleAccept(inviteId: string) {
+  async function updateInvite(
+    inviteId: string,
+    action: "accept" | "reject",
+    successMessage: string,
+    errorMessage: string
+  ) {
     try {
-      const res = await fetch(`/api/invites/${inviteId}/accept`,
+      const res = await fetch(
+        `/api/invites/${inviteId}/${action}`,
         {
           method: "POST",
         }
@@ -139,52 +145,45 @@ function NotificationsSheet() {
       }
 
       setInvites((prev) =>
-        prev.filter(
-          (invite) =>
-            invite.id !== inviteId
-        )
+        prev.filter((invite) => invite.id !== inviteId)
       );
 
-      toast.success("Workspace joined successfully");
+      toast.success(successMessage);
     } catch {
-      toast.error(
-        "Failed to accept invite"
-      );
+      toast.error(errorMessage);
     }
+  }
+
+  async function handleOpenChange(nextOpen: boolean) {
+    setOpen(nextOpen);
+
+    if (nextOpen) {
+      await loadInvites();
+    }
+  }
+
+  async function handleAccept(inviteId: string) {
+    await updateInvite(
+      inviteId,
+      "accept",
+      "Workspace joined successfully",
+      "Failed to accept invite"
+    );
   }
 
   async function handleReject(
     inviteId: string
   ) {
-    try {
-      const res = await fetch(
-        `/api/invites/${inviteId}/reject`,
-        {
-          method: "POST",
-        }
-      );
-
-      if (!res.ok) {
-        throw new Error();
-      }
-
-      setInvites((prev) =>prev.filter((invite) =>
-            invite.id !== inviteId
-        )
-      );
-
-      toast.success(
-        "Invite rejected"
-      );
-    } catch {
-      toast.error(
-        "Failed to reject invite"
-      );
-    }
+    await updateInvite(
+      inviteId,
+      "reject",
+      "Invite rejected",
+      "Failed to reject invite"
+    );
   }
 
   return (
-    <Sheet>
+    <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetTrigger asChild>
         <Button
           variant="outline"

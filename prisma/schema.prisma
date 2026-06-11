@@ -44,32 +44,22 @@ model Video {
 
   shareId String @unique @default(cuid())
 
-  processingStatus ProcessingStatus @default(UPLOADED)
-
-  userId        String
-  workspaceId   String?
-  mimeType      String?
+  userId      String
+  workspaceId String?
+  mimeType    String?
   recordingType RecordingType?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  processingStartedAt DateTime?
-  processingEndedAt   DateTime?
-  errorMessage        String?
 
   owner User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull) // if deleted video should not be
 
   comments    Comment[]
-  transcript  Transcript?
-  summary     Summary?
-  actionItems ActionItem[]
 
   @@index([userId])
   @@index([workspaceId])
-  @@index([processingStatus])
 }
 
 model Workspace {
@@ -138,14 +128,6 @@ enum Visibility {
   UNLISTED
 }
 
-enum ProcessingStatus {
-  UPLOADED
-  PROCESSING
-  TRANSCRIBED
-  COMPLETED
-  FAILED
-}
-
 enum RecordingType {
   SCREEN
   CAMERA
@@ -157,62 +139,21 @@ model Comment {
 
   content String
 
-  timestamp Int?
-
   userId  String
   videoId String
+  parentId String?
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video  Video   @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  parent Comment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies Comment[] @relation("CommentReplies")
 
-  @@index([videoId])
+  @@index([videoId, parentId, createdAt])
+  @@index([parentId, createdAt])
   @@index([userId])
-}
-
-model Transcript {
-  id String @id @default(cuid())
-
-  content String @db.Text
-
-  videoId String @unique
-
-  createdAt DateTime @default(now())
-
-  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
-
-  @@index([videoId])
-}
-
-model Summary {
-  id String @id @default(cuid())
-
-  content String @db.Text
-
-  videoId String @unique
-
-  createdAt DateTime @default(now())
-
-  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
-
-  @@index([videoId])
-}
-
-model ActionItem {
-  id String @id @default(cuid())
-
-  task String
-
-  completed Boolean @default(false)
-
-  videoId String
-
-  createdAt DateTime @default(now())
-
-  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
-
-  @@index([videoId])
 }
 
 model Session {
