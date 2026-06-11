@@ -101,3 +101,29 @@ Building this project helped me understand:
 - Workspace collaboration systems
 - Video processing workflows
 - Full-stack deployment
+
+## **Challenges**
+
+### Workspace Permission System
+
+Implemented owner-member permissions to ensure only workspace owners can:
+
+- Invite users
+- Remove members
+- Manage workspace access
+
+### Video Upload Pipeline
+
+Built a scalable upload pipeline using:
+
+- AWS S3
+- Prisma
+- Metadata storage
+
+### Collaboration Features
+
+Designed a workspace-centric collaboration model with:
+
+- Shared videos
+- Team comments
+- Invitation workflow
