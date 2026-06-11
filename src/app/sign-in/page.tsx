@@ -24,6 +24,7 @@ export default function SignInPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Handle sign-in form submission with validation and error handling
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
@@ -36,18 +37,21 @@ export default function SignInPage() {
         password: formData.get("password"),
       };
 
+      // Validate email and password format
       const parsed = signInSchema.safeParse(rawData);
       if (!parsed.success) {
         setError(parsed.error.issues[0].message);
         return;
       }
 
+      // Authenticate user with email and password
       const data: SignInInput = parsed.data;
       const res = await signIn.email({
         email: data.email,
         password: data.password,
       });
 
+      // Redirect to dashboard on successful login
       if (res.error) {
         setError(res.error.message ?? "Something went wrong");
         return;

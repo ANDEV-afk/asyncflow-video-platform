@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { signOut, useSession } from "@/lib/auth-client";
 import { getDashboardPageTitle } from "@/components/dashboard/DashboardSidebar";
 import MyVideosSearch from "@/components/videos/MyVideosSearch";
@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/sheet";
 import { toast } from "sonner";
 
+// Type definition for notification items (invites and notifications)
 type NotificationItem = {
   id: string;
   kind: "invite" | "notification";
@@ -40,6 +41,7 @@ type NotificationItem = {
   metadata?: Record<string, string> | null;
 };
 
+// Extract user initials from name or email for avatar display
 function getInitials(name?: string | null, email?: string | null) {
   if (name?.trim()) {
     return name
@@ -52,6 +54,7 @@ function getInitials(name?: string | null, email?: string | null) {
   return email?.[0]?.toUpperCase() ?? "U";
 }
 
+// Close menu when clicking outside the element
 function useClickOutside(
   ref: React.RefObject<HTMLElement | null>,
   onClose: () => void
@@ -71,6 +74,7 @@ function useClickOutside(
   }, [ref]);
 }
 
+// Return appropriate icon based on notification type
 function getNotificationIcon(type: string) {
   switch (type) {
     case "VIDEO_UPLOADED":
@@ -86,12 +90,14 @@ function getNotificationIcon(type: string) {
   }
 }
 
+// Notifications panel component - shows invites and activity updates
 function NotificationsSheet() {
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Load unread count on mount
   useEffect(() => {
     fetch("/api/notifications", { credentials: "include" })
       .then((res) => (res.ok ? res.json() : null))
@@ -101,6 +107,7 @@ function NotificationsSheet() {
       .catch(() => {});
   }, []);
 
+  // Fetch all notifications when panel is opened
   async function loadNotifications() {
     try {
       setLoading(true);
@@ -120,6 +127,7 @@ function NotificationsSheet() {
     }
   }
 
+  // Accept workspace invite
   async function handleAccept(inviteId: string) {
     try {
       const res = await fetch(`/api/invites/${inviteId}/accept`, {
@@ -134,6 +142,7 @@ function NotificationsSheet() {
     }
   }
 
+  // Reject workspace invite
   async function handleReject(inviteId: string) {
     try {
       const res = await fetch(`/api/invites/${inviteId}/reject`, {
@@ -148,6 +157,7 @@ function NotificationsSheet() {
     }
   }
 
+  // Mark notification as read
   async function markAsRead(notificationId: string) {
     try {
       await fetch(`/api/notifications/${notificationId}/read`, {
@@ -285,9 +295,16 @@ type ProfileMenuProps = {
 };
 
 function ProfileMenu({ name, email }: ProfileMenuProps) {
+  const router = useRouter();
   const menuRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
   useClickOutside(menuRef, () => setIsOpen(false));
+
+  // Handle logout with immediate redirect to sign-in
+  const handleLogout = async () => {
+    await signOut();
+    router.push("/sign-in");
+  };
 
   return (
     <div ref={menuRef} className="relative">
@@ -326,7 +343,7 @@ function ProfileMenu({ name, email }: ProfileMenuProps) {
             <Button
               type="button"
               variant="ghost"
-              onClick={() => signOut()}
+              onClick={handleLogout}
               className="h-auto w-full justify-start px-3 py-2 text-sm text-destructive hover:bg-destructive/10 hover:text-destructive"
             >
               Log out
@@ -339,6 +356,7 @@ function ProfileMenu({ name, email }: ProfileMenuProps) {
 }
 
 export default function DashboardNavbar() {
+  // Get current page title and user session for navbar display
   const pathname = usePathname();
   const { data: session } = useSession();
   const pageTitle = getDashboardPageTitle(pathname);

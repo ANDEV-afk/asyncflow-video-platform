@@ -4,7 +4,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Toaster } from "sonner";
 
-
+// Configure fonts for typography
 const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
 const geistSans = Geist({
@@ -17,6 +17,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// SEO metadata for the application
 export const metadata: Metadata = {
   title: "Async AI — Async Video Collaboration",
   description:
@@ -34,11 +35,11 @@ export default function RootLayout({
       className={cn("h-full", "antialiased", geistSans.variable, geistMono.variable, "font-sans", inter.variable)}
     >
       <body className="min-h-full flex flex-col">
+        {/* Main application content */}
         {children}
-      <Toaster richColors/>
-        </body>
-        
+        {/* Toast notifications for user feedback */}
+        <Toaster richColors/>
+      </body>
     </html>
-
   );
 }
