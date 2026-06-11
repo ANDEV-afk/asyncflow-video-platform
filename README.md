@@ -43,7 +43,7 @@ async-ai-video-platform.vercel.app
 - Workspace videos
 - Analytics overview
 
-## ** Architecture**
+## Architecture
 
 User
 ↓
