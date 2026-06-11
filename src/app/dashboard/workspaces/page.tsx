@@ -39,7 +39,7 @@ export default async function WorkspacesPage() {
       </div>
 
       {workspaces.length === 0 ? (
-        <div className="rounded-xl border p-10 text-center">
+        <div className="rounded-2xl border border-dashed bg-muted/30 p-10 text-center">
           <h2 className="text-lg font-semibold">
             No workspaces yet
           </h2>

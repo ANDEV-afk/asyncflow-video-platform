@@ -1,5 +1,11 @@
 import { Visibility } from "@/generated/prisma/client";
 
+import { ActivityType, createActivity } from "@/lib/activity";
+import {
+  NotificationType,
+  createNotification,
+  createNotificationsForMembers,
+} from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 
 import type { CommentNode } from "@/types/comment";
@@ -176,6 +182,61 @@ async function createCommentRecord({
       },
     },
   });
+
+  if (parentId === null) {
+    const videoDetails = await prisma.video.findUnique({
+      where: { id: videoId },
+      select: {
+        title: true,
+        userId: true,
+        workspaceId: true,
+        workspace: { select: { name: true } },
+      },
+    });
+
+    if (videoDetails) {
+      const actor = comment.user;
+
+      if (videoDetails.workspaceId) {
+        await createActivity({
+          type: ActivityType.COMMENT_ADDED,
+          userId,
+          workspaceId: videoDetails.workspaceId,
+          metadata: {
+            videoId,
+            videoTitle: videoDetails.title,
+            commentId: comment.id,
+          },
+        });
+
+        await createNotificationsForMembers({
+          type: NotificationType.NEW_COMMENT,
+          workspaceId: videoDetails.workspaceId,
+          actorId: userId,
+          metadata: {
+            videoId,
+            videoTitle: videoDetails.title,
+            commentId: comment.id,
+            actorId: userId,
+            actorName: actor.name,
+            workspaceName: videoDetails.workspace?.name,
+          },
+        });
+      } else if (videoDetails.userId !== userId) {
+        await createNotification({
+          type: NotificationType.NEW_COMMENT,
+          userId: videoDetails.userId,
+          metadata: {
+            videoId,
+            videoTitle: videoDetails.title,
+            commentId: comment.id,
+            actorId: userId,
+            actorName: actor.name,
+          },
+        });
+      }
+    }
+  }
 
   return serializeComment(comment);
 }

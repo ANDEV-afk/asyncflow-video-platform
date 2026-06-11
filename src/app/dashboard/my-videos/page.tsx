@@ -6,7 +6,11 @@ import { redirect } from "next/navigation";
 import MyVideosList from "@/components/videos/MyVideosList";
 import { generateThumbnailSignedUrl } from "@/lib/generateThumbnailSignedUrl";
 
-export default async function MyVideosPage() {
+export default async function MyVideosPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -14,58 +18,63 @@ export default async function MyVideosPage() {
     redirect("/sign-in");
   }
 
+  const { q } = await searchParams;
+  const query = q?.trim() ?? "";
+
   const rawVideos = await prisma.video.findMany({
     where: {
       userId: session.user.id,
+      ...(query
+        ? {
+            OR: [
+              { title: { contains: query, mode: "insensitive" } },
+              { description: { contains: query, mode: "insensitive" } },
+            ],
+          }
+        : {}),
     },
-    orderBy: {
-      createdAt: "desc",
-    },
+    orderBy: { createdAt: "desc" },
   });
 
-  if (rawVideos.length === 0) {
+  if (rawVideos.length === 0 && !query) {
     return (
       <div className="space-y-6">
         <DashboardPageHeader
           title="My Videos"
-          description="Manage Recordings"
+          description="Manage your async recordings"
         />
 
-        <div className="rounded-lg border p-10 text-center">
-          <h2 className="text-lg font-semibold">
-            No videos yet
-          </h2>
-
-          <p className="text-muted-foreground">
+        <div className="rounded-2xl border border-dashed bg-muted/30 p-10 text-center">
+          <h2 className="text-lg font-semibold">No videos yet</h2>
+          <p className="mt-1 text-muted-foreground">
             Record your first video to get started.
           </p>
         </div>
       </div>
     );
   }
-  // Database se videos lao → har video ke liye thumbnail ka signed URL parallel mein banao → sab ready hone ke baad VideoCard render karo.
-  // Promise.all + map = fast parallel processing with same order preserved
 
-  const videos = await Promise.all(//// videos = [video1WithUrl, video2WithUrl, video3WithUrl]
+  const videos = await Promise.all(
     rawVideos.map(async (video) => ({
-      ...video, // remaining props of video should be same only thumbnail changed here.
-
+      ...video,
       thumbnailUrl: video.thumbnailKey
-        ? await generateThumbnailSignedUrl( // promise.all use as for loop can have latency if each iteration occur
-            video.thumbnailKey
-          )
+        ? await generateThumbnailSignedUrl(video.thumbnailKey)
         : null,
     }))
   );
 
-    return (
-      <div className="space-y-6">
-        <DashboardPageHeader
-          title="My Videos"
-          description="Manage Recordings"
-        />
+  return (
+    <div className="space-y-6">
+      <DashboardPageHeader
+        title="My Videos"
+        description={
+          query
+            ? `${videos.length} result${videos.length === 1 ? "" : "s"} for "${query}"`
+            : "Manage your async recordings"
+        }
+      />
 
-        <MyVideosList videos={videos} />
-      </div>
-    );
-  }
+      <MyVideosList videos={videos} query={query} />
+    </div>
+  );
+}

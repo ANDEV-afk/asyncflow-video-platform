@@ -6,6 +6,13 @@ import { usePathname } from "next/navigation";
 import { signOut, useSession } from "@/lib/auth-client";
 import { getDashboardPageTitle } from "@/components/dashboard/DashboardSidebar";
 import MyVideosSearch from "@/components/videos/MyVideosSearch";
+import {
+  Bell,
+  MessageSquare,
+  Upload,
+  UserPlus,
+  Users,
+} from "lucide-react";
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -21,23 +28,17 @@ import {
 } from "@/components/ui/sheet";
 import { toast } from "sonner";
 
-type Invite = {
+type NotificationItem = {
   id: string;
-
-  workspace: {
-    id: string;
-    name: string;
-    slug: string;
-  };
-
-  invitedBy: {
-    id: string;
-    name: string;
-    email: string;
-  };
+  kind: "invite" | "notification";
+  type: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+  workspace?: { id: string; name: string; slug: string } | null;
+  invitedBy?: { id: string; name: string; email: string };
+  metadata?: Record<string, string> | null;
 };
-
-// --- Helpers ---
 
 function getInitials(name?: string | null, email?: string | null) {
   if (name?.trim()) {
@@ -48,7 +49,6 @@ function getInitials(name?: string | null, email?: string | null) {
       .slice(0, 2)
       .toUpperCase();
   }
-
   return email?.[0]?.toUpperCase() ?? "U";
 }
 
@@ -57,203 +57,219 @@ function useClickOutside(
   onClose: () => void
 ) {
   const onCloseRef = useRef(onClose);
-
   useEffect(() => {
     onCloseRef.current = onClose;
   }, [onClose]);
-
   useEffect(() => {
     function handleClick(event: MouseEvent) {
       if (ref.current && !ref.current.contains(event.target as Node)) {
         onCloseRef.current();
       }
     }
-
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [ref]);
 }
 
-// --- Sub-components ---
+function getNotificationIcon(type: string) {
+  switch (type) {
+    case "VIDEO_UPLOADED":
+      return Upload;
+    case "NEW_COMMENT":
+      return MessageSquare;
+    case "MEMBER_JOINED":
+      return UserPlus;
+    case "WORKSPACE_INVITE":
+      return Users;
+    default:
+      return Bell;
+  }
+}
 
 function NotificationsSheet() {
-  const [invites, setInvites] =
-    useState<Invite[]>([]);
+  const [items, setItems] = useState<NotificationItem[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const [loading, setLoading] =
-    useState(true);
+  useEffect(() => {
+    fetch("/api/notifications", { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) setUnreadCount(data.unreadCount);
+      })
+      .catch(() => {});
+  }, []);
 
-  async function loadInvites() {
+  async function loadNotifications() {
     try {
       setLoading(true);
-
-      const res = await fetch("/api/invites", {
+      const res = await fetch("/api/notifications", {
         method: "GET",
         credentials: "include",
       });
-
-      if (!res.ok) {
-        throw new Error(
-          `Request failed: ${res.status}`
-        );
-      }
-
-      const contentType = res.headers.get("content-type");
-
-      if (
-        !contentType?.includes(
-          "application/json"
-        )
-      ) {
-        const html = await res.text();
-        console.error(
-          "Expected JSON but received:",
-          html
-        );
-        throw new Error("API did not return JSON");
-      }
-
+      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
       const data = await res.json();
-      setInvites(data);
+      setItems(data.items);
+      setUnreadCount(data.unreadCount);
     } catch (error) {
       console.error(error);
-      toast.error(
-        "Failed to load notifications"
-      );
+      toast.error("Failed to load notifications");
     } finally {
       setLoading(false);
     }
   }
 
-  async function updateInvite(
-    inviteId: string,
-    action: "accept" | "reject",
-    successMessage: string,
-    errorMessage: string
-  ) {
+  async function handleAccept(inviteId: string) {
     try {
-      const res = await fetch(
-        `/api/invites/${inviteId}/${action}`,
-        {
-          method: "POST",
-        }
-      );
-
-      if (!res.ok) {
-        throw new Error();
-      }
-
-      setInvites((prev) =>
-        prev.filter((invite) => invite.id !== inviteId)
-      );
-
-      toast.success(successMessage);
+      const res = await fetch(`/api/invites/${inviteId}/accept`, {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error();
+      setItems((prev) => prev.filter((item) => item.id !== inviteId));
+      setUnreadCount((c) => Math.max(0, c - 1));
+      toast.success("Workspace joined successfully");
     } catch {
-      toast.error(errorMessage);
+      toast.error("Failed to accept invite");
+    }
+  }
+
+  async function handleReject(inviteId: string) {
+    try {
+      const res = await fetch(`/api/invites/${inviteId}/reject`, {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error();
+      setItems((prev) => prev.filter((item) => item.id !== inviteId));
+      setUnreadCount((c) => Math.max(0, c - 1));
+      toast.success("Invite rejected");
+    } catch {
+      toast.error("Failed to reject invite");
+    }
+  }
+
+  async function markAsRead(notificationId: string) {
+    try {
+      await fetch(`/api/notifications/${notificationId}/read`, {
+        method: "POST",
+      });
+      setItems((prev) =>
+        prev.map((item) =>
+          item.id === notificationId ? { ...item, read: true } : item
+        )
+      );
+      setUnreadCount((c) => Math.max(0, c - 1));
+    } catch {
+      // silent
     }
   }
 
   async function handleOpenChange(nextOpen: boolean) {
     setOpen(nextOpen);
-
-    if (nextOpen) {
-      await loadInvites();
-    }
-  }
-
-  async function handleAccept(inviteId: string) {
-    await updateInvite(
-      inviteId,
-      "accept",
-      "Workspace joined successfully",
-      "Failed to accept invite"
-    );
-  }
-
-  async function handleReject(
-    inviteId: string
-  ) {
-    await updateInvite(
-      inviteId,
-      "reject",
-      "Invite rejected",
-      "Failed to reject invite"
-    );
+    if (nextOpen) await loadNotifications();
   }
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className="relative"
-        >
-          Notifications
-
-          {invites.length > 0 && (
-            <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
-              {invites.length}
+        <Button variant="outline" size="icon" className="relative rounded-full">
+          <Bell className="size-4" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full bg-violet-600 text-[10px] font-bold text-white">
+              {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           )}
         </Button>
       </SheetTrigger>
 
-      <SheetContent
-        side="right"
-        className="w-full sm:max-w-md"
-      >
+      <SheetContent side="right" className="w-full sm:max-w-md">
         <SheetHeader>
-          <SheetTitle>
-            Notifications
-          </SheetTitle>
-
+          <SheetTitle>Notifications</SheetTitle>
           <SheetDescription>
-            Workspace invites
+            Invites, comments, uploads, and team updates
           </SheetDescription>
         </SheetHeader>
 
-        <div className="space-y-4 px-4 py-4">
+        <div className="space-y-3 overflow-y-auto px-4 py-4">
           {loading ? (
-            <p className="text-sm text-muted-foreground">
-              Loading...
-            </p>
-          ) : invites.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No notifications yet.
-            </p>
+            <p className="text-sm text-muted-foreground">Loading...</p>
+          ) : items.length === 0 ? (
+            <div className="rounded-xl border border-dashed p-8 text-center">
+              <Bell className="mx-auto size-8 text-muted-foreground/50" />
+              <p className="mt-2 text-sm text-muted-foreground">
+                No notifications yet
+              </p>
+            </div>
           ) : (
-            invites.map((invite) => (
-              <div
-                key={invite.id}
-                className="rounded-lg border p-4"
-              >
-                <h4 className="font-medium">
-                  {invite.workspace.name}
-                </h4>
-
-                <p className="text-sm text-muted-foreground">
-                  Invited by{" "}
-                  {invite.invitedBy.name}
-                </p>
-
-                <div className="mt-3 flex gap-2">
-                  <Button size="sm" onClick={() => handleAccept(invite.id)}>
-                    Accept
-                  </Button>
-                  <Button size="sm"variant="outline" onClick={() =>handleReject(invite.id)}>
-                    Reject
-                  </Button>
+            items.map((item) => {
+              const Icon = getNotificationIcon(item.type);
+              return (
+                <div
+                  key={`${item.kind}-${item.id}`}
+                  className={`rounded-xl border p-4 transition-colors ${
+                    !item.read ? "border-violet-500/20 bg-violet-500/5" : ""
+                  }`}
+                  onClick={() => {
+                    if (item.kind === "notification" && !item.read) {
+                      markAsRead(item.id);
+                    }
+                  }}
+                >
+                  <div className="flex gap-3">
+                    <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+                      <Icon className="size-4 text-muted-foreground" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm leading-snug">{item.message}</p>
+                      {item.workspace && (
+                        <Link
+                          href={`/dashboard/workspaces/${item.workspace.id}`}
+                          className="mt-1 inline-block text-xs text-violet-600 hover:underline"
+                          onClick={() => setOpen(false)}
+                        >
+                          {item.workspace.name}
+                        </Link>
+                      )}
+                      {item.kind === "invite" && (
+                        <div className="mt-3 flex gap-2">
+                          <Button
+                            size="sm"
+                            className="h-7 rounded-full text-xs"
+                            onClick={() => handleAccept(item.id)}
+                          >
+                            Accept
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 rounded-full text-xs"
+                            onClick={() => handleReject(item.id)}
+                          >
+                            Reject
+                          </Button>
+                        </div>
+                      )}
+                      {item.kind === "notification" &&
+                        item.metadata?.videoId && (
+                          <Link
+                            href={`/dashboard/my-videos/${item.metadata.videoId}`}
+                            className="mt-1 inline-block text-xs text-violet-600 hover:underline"
+                            onClick={() => setOpen(false)}
+                          >
+                            View video
+                          </Link>
+                        )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 
         <SheetFooter>
           <SheetClose asChild>
-            <Button variant="outline">
+            <Button variant="outline" className="rounded-full">
               Close
             </Button>
           </SheetClose>
@@ -271,12 +287,7 @@ type ProfileMenuProps = {
 function ProfileMenu({ name, email }: ProfileMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
-
   useClickOutside(menuRef, () => setIsOpen(false));
-
-  function closeMenu() {
-    setIsOpen(false);
-  }
 
   return (
     <div ref={menuRef} className="relative">
@@ -297,18 +308,17 @@ function ProfileMenu({ name, email }: ProfileMenuProps) {
             <p className="truncate text-sm font-medium">{name || "User"}</p>
             <p className="truncate text-xs text-muted-foreground">{email}</p>
           </div>
-
           <div className="p-2">
             <Link
               href="/dashboard/settings"
-              onClick={closeMenu}
+              onClick={() => setIsOpen(false)}
               className="flex w-full rounded-xl px-3 py-2 text-sm transition-colors hover:bg-muted"
             >
               Profile
             </Link>
             <Link
               href="/dashboard/settings"
-              onClick={closeMenu}
+              onClick={() => setIsOpen(false)}
               className="flex w-full rounded-xl px-3 py-2 text-sm transition-colors hover:bg-muted"
             >
               Settings
@@ -327,8 +337,6 @@ function ProfileMenu({ name, email }: ProfileMenuProps) {
     </div>
   );
 }
-
-// --- Main navbar ---
 
 export default function DashboardNavbar() {
   const pathname = usePathname();

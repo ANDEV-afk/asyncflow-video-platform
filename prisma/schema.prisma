@@ -28,6 +28,8 @@ model User {
   ownedWorkspace       Workspace[]       @relation("WorkspaceOwner") //workspace i owned or the head of it.
   sentInvites          WorkspaceInvite[] @relation("SentInvites")
   receivedInvites      WorkspaceInvite[] @relation("ReceivedInvites")
+  activities           Activity[]
+  notifications        Notification[]
 }
 
 model Video {
@@ -75,9 +77,11 @@ model Workspace {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  members WorkspaceMember[]
-  videos  Video[]
-  invites WorkspaceInvite[]
+  members       WorkspaceMember[]
+  videos        Video[]
+  invites       WorkspaceInvite[]
+  activities    Activity[]
+  notifications Notification[]
 
   @@index([ownerId]) // for getting all workspaces of the owner very fast.
 }
@@ -199,4 +203,35 @@ model Verification {
   updatedAt  DateTime @updatedAt
 
   @@index([identifier])
+}
+
+model Activity {
+  id          String   @id @default(cuid())
+  type        String
+  userId      String
+  workspaceId String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@index([userId])
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  type        String
+  userId      String
+  workspaceId String?
+  metadata    Json?
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read, createdAt])
+  @@index([workspaceId])
 }

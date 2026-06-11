@@ -1,4 +1,9 @@
+import { ActivityType, createActivity } from "@/lib/activity";
 import { auth } from "@/lib/auth";
+import {
+  NotificationType,
+  createNotificationsForMembers,
+} from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
@@ -20,9 +25,14 @@ export async function POST(request: NextRequest,{params}: {params: Promise<{ inv
 
   try {
     const invite =
-      await prisma.workspaceInvite.findUnique({ // invite existence checking.
+      await prisma.workspaceInvite.findUnique({
         where: {
           id: inviteId,
+        },
+        include: {
+          workspace: {
+            select: { name: true },
+          },
         },
       });
 
@@ -70,6 +80,26 @@ export async function POST(request: NextRequest,{params}: {params: Promise<{ inv
         });
       }
     );
+
+    await createActivity({
+      type: ActivityType.MEMBER_JOINED,
+      userId: session.user.id,
+      workspaceId: invite.workspaceId,
+      metadata: {
+        memberName: session.user.name,
+      },
+    });
+
+    await createNotificationsForMembers({
+      type: NotificationType.MEMBER_JOINED,
+      workspaceId: invite.workspaceId,
+      actorId: session.user.id,
+      metadata: {
+        actorId: session.user.id,
+        actorName: session.user.name,
+        workspaceName: invite.workspace.name,
+      },
+    });
 
     return NextResponse.json({
       success: true,

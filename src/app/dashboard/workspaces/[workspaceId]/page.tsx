@@ -2,12 +2,16 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import { headers } from "next/headers";
-import EditWorkspaceDialog from "@/components/workspaces/EditWorkspaceDialog";
-import VideoCard from "@/components/videos/VideoCard";
+import ActivityFeed from "@/components/workspaces/ActivityFeed";
+import WorkspaceStats from "@/components/workspaces/WorkspaceStats";
+import WorkspaceHeader from "@/components/workspaces/WorkspaceHeader";
+import WorkspaceVideosSection from "@/components/workspaces/WorkspaceVideosSection";
 import { addThumbnailUrls } from "@/lib/videos";
-import { Button } from "@/components/ui/button";
+import { getWorkspaceActivities } from "@/lib/activity";
 
-export default async function WorkspacePage({params}: {
+export default async function WorkspacePage({
+  params,
+}: {
   params: Promise<{ workspaceId: string }>;
 }) {
   const { workspaceId } = await params;
@@ -20,31 +24,14 @@ export default async function WorkspacePage({params}: {
     redirect("/sign-in");
   }
 
-  const workspace =
-    await prisma.workspace.findUnique({
-      where: {
-        id: workspaceId,
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+    include: {
+      members: {
+        include: { user: true },
       },
-      include: {
-        members: {
-          include: {
-            user: true, // WHERE THIS MEMBER IS ALSO INCLUDED
-          },
-        },
-
-        videos: {
-          where: {
-            visibility: {
-              not: "PRIVATE",
-            },
-          },
-          orderBy: {
-            createdAt: "desc",
-          },
-        },
-      },
-    });
-
+    },
+  });
 
   if (!workspace) {
     notFound();
@@ -59,77 +46,68 @@ export default async function WorkspacePage({params}: {
   }
 
   const isOwner = membership.role === "OWNER";
-  const owner = workspace.members.find(
-    (member) => member.role === "OWNER"
-  );
+  const owner = workspace.members.find((member) => member.role === "OWNER");
 
-  const videosWithThumbnails =
-    await addThumbnailUrls(workspace.videos);
+  const [memberCount, videoCount, commentCount, videos, activities] =
+    await Promise.all([
+      prisma.workspaceMember.count({ where: { workspaceId } }),
+      prisma.video.count({
+        where: {
+          workspaceId,
+          visibility: { not: "PRIVATE" },
+        },
+      }),
+      prisma.comment.count({
+        where: {
+          video: { workspaceId },
+        },
+      }),
+      prisma.video.findMany({
+        where: {
+          workspaceId,
+          visibility: { not: "PRIVATE" },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+      getWorkspaceActivities(workspaceId, 15),
+    ]);
+
+  const videosWithThumbnails = await addThumbnailUrls(videos);
 
   return (
     <div className="space-y-8">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm text-muted-foreground">
-            Owner:{" "}
-            {owner?.user.name ?? "Unknown"}
-          </p>
-        </div>
+      <WorkspaceHeader
+        workspaceId={workspace.id}
+        name={workspace.name}
+        description={workspace.description}
+        ownerName={owner?.user.name ?? "Unknown"}
+        members={workspace.members}
+        isOwner={isOwner}
+      />
 
-        {isOwner && (
-          <EditWorkspaceDialog
-            workspaceId={workspace.id}
-            name={workspace.name}
-            description={workspace.description}
-            trigger={
-              <Button variant="outline" size="sm">
-                Edit
-              </Button>
-            }
-          />
-        )}
-      </div>
+      <WorkspaceStats
+        members={memberCount}
+        videos={videoCount}
+        comments={commentCount}
+      />
 
-      <div className="rounded-lg border p-4">
-        <h3 className="mb-2 font-semibold">
-          Description
-        </h3>
+      <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <WorkspaceVideosSection
+          videos={videosWithThumbnails}
+          totalCount={videoCount}
+        />
 
-        <p className="text-muted-foreground">
-          {workspace.description ||
-            "No description provided."}
-        </p>
-      </div>
-
-      <div className="rounded-lg border p-4">
-        <h3 className="mb-4 font-semibold">
-          Videos
-        </h3>
-
-        {workspace.videos.length === 0 ? (
-          <p className="text-muted-foreground">
-            No videos yet
-          </p>
-        ) : (
-          <div className="grid grid-cols-4 space-x-4">
-            {videosWithThumbnails.map((video) => (
-              <VideoCard
-                key={video.id}
-                video={video}
-              />
-            ))}
+        <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
+          <div className="rounded-2xl border bg-card/50 p-5">
+            <h2 className="font-semibold tracking-tight">Recent Activity</h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Latest updates from your team
+            </p>
+            <div className="mt-4">
+              <ActivityFeed activities={activities} />
+            </div>
           </div>
-        )}
-      </div>
-
-      <div className="rounded-lg border p-4">
-        <h3 className="mb-2 font-semibold">
-          Created
-        </h3>
-
-        <p className="text-muted-foreground">
-          {workspace.createdAt.toLocaleString()}
-        </p>
+        </aside>
       </div>
     </div>
   );

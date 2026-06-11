@@ -48,7 +48,7 @@ export default async function WorkspaceLayout({
     <div className="space-y-6">
       <DashboardPageHeader
         title={workspace.name}
-        description="Workspace"
+        description={`${workspace.members.length} member${workspace.members.length === 1 ? "" : "s"} · Workspace`}
       />
 
       <WorkspaceNav workspaceId={workspaceId} />

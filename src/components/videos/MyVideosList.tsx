@@ -2,7 +2,6 @@
 
 import { Video } from "@/types/video";
 import VideoCard from "./VideoCard";
-import { useMyVideosSearch } from "./MyVideosSearchContext";
 
 type VideoWithThumbnail = Video & {
   thumbnailUrl: string | null;
@@ -10,25 +9,14 @@ type VideoWithThumbnail = Video & {
 
 type MyVideosListProps = {
   videos: VideoWithThumbnail[];
+  query?: string;
 };
-// Server loads all videos once → navbar input updates shared context → list filters that array client-side and re-renders matching cards instantly.
 
-export default function MyVideosList({ videos }: MyVideosListProps) {
-  const { search } = useMyVideosSearch();
-  const query = search.trim().toLowerCase(); // for quering the filter we are using this variable.
-
-  const filteredVideos = query
-    ? videos.filter(
-        (video) =>
-          video.title.toLowerCase().includes(query) ||
-          video.description?.toLowerCase().includes(query)
-      )
-    : videos;
-
-  if (filteredVideos.length > 0) { // conditional rendering
+export default function MyVideosList({ videos, query = "" }: MyVideosListProps) {
+  if (videos.length > 0) {
     return (
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {filteredVideos.map((video) => (
+        {videos.map((video) => (
           <VideoCard key={video.id} video={video} />
         ))}
       </div>
@@ -36,9 +24,9 @@ export default function MyVideosList({ videos }: MyVideosListProps) {
   }
 
   return (
-    <div className="rounded-lg border p-10 text-center">
+    <div className="rounded-2xl border border-dashed bg-muted/30 p-10 text-center">
       <h2 className="text-lg font-semibold">No recordings found</h2>
-      <p className="text-muted-foreground">
+      <p className="mt-1 text-muted-foreground">
         {query ? "Try a different search term." : "No videos to show."}
       </p>
     </div>

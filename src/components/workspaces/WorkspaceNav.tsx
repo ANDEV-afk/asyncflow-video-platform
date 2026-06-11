@@ -7,8 +7,7 @@ import { cn } from "@/lib/utils";
 const tabs = [
   {
     label: "Overview",
-    href: (workspaceId: string) =>
-      `/dashboard/workspaces/${workspaceId}`,
+    href: (workspaceId: string) => `/dashboard/workspaces/${workspaceId}`,
   },
   {
     label: "Members",
@@ -30,24 +29,23 @@ export default function WorkspaceNav({
   const pathname = usePathname();
 
   return (
-    <nav className="flex gap-1 border-b">
+    <nav className="flex gap-1 rounded-xl border bg-muted/40 p-1">
       {tabs.map((tab) => {
         const href = tab.href(workspaceId);
         const isActive =
           pathname === href ||
           (tab.label === "Overview" &&
-            pathname ===
-              `/dashboard/workspaces/${workspaceId}`);
+            pathname === `/dashboard/workspaces/${workspaceId}`);
 
         return (
           <Link
             key={tab.label}
             href={href}
             className={cn(
-              "px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px",
+              "flex-1 rounded-lg px-4 py-2 text-center text-sm font-medium transition-all sm:flex-none sm:text-left",
               isActive
-                ? "border-primary text-foreground"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
             )}
           >
             {tab.label}

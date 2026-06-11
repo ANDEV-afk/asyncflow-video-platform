@@ -2,7 +2,12 @@ import { headers } from "next/headers";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 
 import { Visibility } from "@/generated/prisma/client";
+import { ActivityType, createActivity } from "@/lib/activity";
 import { auth } from "@/lib/auth";
+import {
+  NotificationType,
+  createNotificationsForMembers,
+} from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { resolveVideoWorkspaceId } from "@/lib/video-workspace";
 import { s3 } from "@/lib/s3";
@@ -119,6 +124,36 @@ export async function POST(request: NextRequest) {
           recordingType === "SCREEN"? "SCREEN": recordingType === "CAMERA"? "CAMERA": "SCREEN_AND_CAMERA",
       }
     });
+
+    if (workspaceResult.workspaceId) {
+      const workspace = await prisma.workspace.findUnique({
+        where: { id: workspaceResult.workspaceId },
+        select: { name: true },
+      });
+
+      await createActivity({
+        type: ActivityType.VIDEO_UPLOADED,
+        userId: session.user.id,
+        workspaceId: workspaceResult.workspaceId,
+        metadata: {
+          videoId: video.id,
+          videoTitle: title,
+        },
+      });
+
+      await createNotificationsForMembers({
+        type: NotificationType.VIDEO_UPLOADED,
+        workspaceId: workspaceResult.workspaceId,
+        actorId: session.user.id,
+        metadata: {
+          videoId: video.id,
+          videoTitle: title,
+          actorId: session.user.id,
+          actorName: session.user.name,
+          workspaceName: workspace?.name,
+        },
+      });
+    }
 
     return NextResponse.json({
       success: true,
