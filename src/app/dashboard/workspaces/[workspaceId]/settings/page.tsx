@@ -44,7 +44,7 @@ export default async function WorkspaceSettingsPage({
   const isOwner = membership.role === "OWNER";
 
   if (!isOwner) {
-    notFound();
+    redirect(`/dashboard/workspaces/${workspaceId}`);
   }
 
   return (

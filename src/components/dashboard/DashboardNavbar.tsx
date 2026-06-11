@@ -27,6 +27,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { toast } from "sonner";
+import {useRouter} from "next/navigation";
 
 type NotificationItem = {
   id: string;
@@ -289,6 +290,13 @@ function ProfileMenu({ name, email }: ProfileMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   useClickOutside(menuRef, () => setIsOpen(false));
 
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await signOut();
+    router.push("/sign-in");
+  };
+
   return (
     <div ref={menuRef} className="relative">
       <Button
@@ -316,17 +324,11 @@ function ProfileMenu({ name, email }: ProfileMenuProps) {
             >
               Profile
             </Link>
-            <Link
-              href="/dashboard/settings"
-              onClick={() => setIsOpen(false)}
-              className="flex w-full rounded-xl px-3 py-2 text-sm transition-colors hover:bg-muted"
-            >
-              Settings
-            </Link>
+
             <Button
               type="button"
               variant="ghost"
-              onClick={() => signOut()}
+              onClick={handleLogout}
               className="h-auto w-full justify-start px-3 py-2 text-sm text-destructive hover:bg-destructive/10 hover:text-destructive"
             >
               Log out
