@@ -70,7 +70,7 @@ export default function SignUpPage() {
           <div className="flex size-10 items-center justify-center rounded-xl bg-white/20 text-lg font-bold backdrop-blur-sm">
             A
           </div>
-          <span className="text-xl font-bold">Async AI</span>
+          <span className="text-xl font-bold">AsyncFlow</span>
         </Link>
         <div className="relative">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-sm backdrop-blur-sm">
@@ -88,7 +88,7 @@ export default function SignUpPage() {
           </p>
         </div>
         <p className="relative text-sm text-violet-200">
-          © Async AI — Record once, collaborate forever.
+          © AsyncFlow — Record once, collaborate forever.
         </p>
       </div>
 
@@ -102,7 +102,7 @@ export default function SignUpPage() {
               <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-sky-500 text-sm font-bold text-white">
                 A
               </div>
-              <span className="font-bold">Async AI</span>
+              <span className="font-bold">AsyncFlow</span>
             </Link>
             <CardTitle className="text-2xl font-bold tracking-tight">
               Create account

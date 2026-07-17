@@ -101,7 +101,7 @@ export default function ProfileSettingsForm() {
           <h2 className="mt-4 text-lg font-semibold">{user?.name ?? "User"}</h2>
           <p className="mt-1 text-sm text-muted-foreground">{user?.email}</p>
           <div className="mt-4 rounded-full bg-background/80 px-3 py-1 text-xs font-medium text-muted-foreground">
-            Async AI member
+            AsyncFlow member
           </div>
         </CardContent>
       </Card>

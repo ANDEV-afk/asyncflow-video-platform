@@ -62,7 +62,7 @@ export default function DashboardSidebar() {
             A
           </div>
           <div className="min-w-0 group-data-[collapsible=icon]:hidden">
-            <p className="truncate text-sm font-bold tracking-tight">Async AI</p>
+            <p className="truncate text-sm font-bold tracking-tight">AsyncFlow</p>
             <p className="truncate text-[10px] text-muted-foreground">
               Async collaboration
             </p>

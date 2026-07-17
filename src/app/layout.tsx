@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Async AI — Async Video Collaboration",
+  title: "AsyncFlow — Async Video Collaboration",
   description:
     "Record async video updates, collaborate in workspaces, and discuss with threaded comments.",
 };

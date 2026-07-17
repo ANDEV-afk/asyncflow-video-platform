@@ -62,7 +62,7 @@ export default function Home() {
             <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-sky-500 text-sm font-bold text-white shadow-lg shadow-violet-500/25">
               A
             </div>
-            <span className="text-lg font-bold tracking-tight">Async AI</span>
+            <span className="text-lg font-bold tracking-tight">AsyncFlow</span>
           </Link>
           <nav className="hidden items-center gap-8 md:flex">
             <a
@@ -230,7 +230,7 @@ export default function Home() {
               Ready to ditch the meeting marathon?
             </h2>
             <p className="mt-4 text-lg text-violet-100">
-              Join teams already collaborating asynchronously with Async AI.
+              Join teams already collaborating asynchronously with AsyncFlow.
             </p>
             <Button
               size="lg"
@@ -252,7 +252,7 @@ export default function Home() {
             <div className="flex size-7 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-sky-500 text-xs font-bold text-white">
               A
             </div>
-            <span className="text-sm font-semibold">Async AI</span>
+            <span className="text-sm font-semibold">AsyncFlow</span>
           </div>
           <p className="text-sm text-muted-foreground">
             Async video collaboration for modern teams.
