@@ -4,7 +4,7 @@ A Loom-inspired video collaboration platform that enables teams to record, uploa
 
 ## **Live Demo**
 
-**https://async-ai-video-platform.vercel.app/**
+**https://asyncflow-platform.vercel.app/**
 
 ## **Screenshots**
 <img width="1849" height="839" alt="Screenshot 2026-06-11 174633" src="https://github.com/user-attachments/assets/822f0710-fc6e-40c5-850c-dd84151321f2" />
